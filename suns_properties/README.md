@@ -18,7 +18,7 @@ La entropía es un concepto que cuantifica el nivel de desorden o imprevisibilid
 - Uniformidad
 - Suavidad Relativa
 - Contraste Tamura
-- Direccionalidad Tamura
+- Direccionalidad Tamura: La que esta en el paper,  ecuación dos.
 
 Estos parámetros se han seleccionado por su relevancia en la caracterización de la textura y las propiedades de las imágenes solares.
 
