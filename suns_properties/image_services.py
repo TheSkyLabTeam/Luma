@@ -1,7 +1,7 @@
 from typing import List
 import pandas as pd
 
-def get_image_urls(start: str, end: str, image_type: str = 'hmiigr', frequency: str = '90T') -> List[str]:
+def get_image_urls(start: str, end: str, image_type: str , frequency: str ) -> List[str]:
     """
     This function generates the URLs to download solar images from the SOHO NASCOM website for a given date range.
 

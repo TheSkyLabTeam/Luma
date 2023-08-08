@@ -1,4 +1,6 @@
 from image_services import calculate_probabilities
+from scipy.signal import convolve2d, find_peaks
+import matplotlib.pyplot as plt
 import numpy as np
 import cv2
 
@@ -204,7 +206,7 @@ def compute_kurtosis(image: np.ndarray) -> float:
     standard_deviation = compute_standard_deviation(image)
 
     # Compute kurtosis
-    kurtosis = (1/standard_deviation**4)*(np.sum(probabilities * (intensities - mean_intensity)**4)) - 3
+    kurtosis = (1/standard_deviation**4)*(np.sum(probabilities * (intensities - mean_intensity)**4)) 
 
     return kurtosis
 
@@ -262,7 +264,140 @@ def compute_relative_smoothness(image: np.ndarray) -> float:
 
     return relative_smoothness
 
+def compute_taruma_contrast(image: np.ndarray) -> float:
+    """
+    Compute the Taruma contrast of an image.
+    
+    The Taruma contrast is a measure derived from the image's standard deviation 
+    and kurtosis, giving insight into its contrast characteristics.
 
+    Parameters
+    ----------
+    image : np.ndarray
+        Input image data. Will be converted to float.
+
+    Returns
+    -------
+    taruma_contrast : float
+        Calculated Taruma contrast.
+        
+    """
+    # Compute standard deviation
+    sigma = compute_standard_deviation(image)
+
+    # Compute kurtosis
+    kurtosis = compute_kurtosis(image)
+
+    # Compute Taruma contrast
+    taruma_contrast = (sigma**2) / (kurtosis**(0.25))
+    
+    return taruma_contrast
+
+def compute_taruma_directionality(image:np.ndarray, plot:bool = False)-> float:
+    """
+    Compute the Taruma directionality of a given image.
+
+    This function employs gradient filters to compute the horizontal and 
+    vertical gradient components of an image. Subsequently, it uses the magnitude
+    and direction of these gradients to construct a directionality histogram.
+    From this histogram, dominant direction peaks are identified. Finally, a 
+    Taruma directionality value is computed based on these peaks.
+
+    Parameters:
+    -----------
+    image : np.ndarray
+        An image in ndarray format. Can be colored or grayscale.
+        If colored, it will automatically be converted to grayscale.
+    
+    plot : bool, optional
+        If set to True, a directionality histogram with highlighted dominant
+        peaks will be displayed. Default is False.
+
+    Returns:
+    --------
+    float
+        A Taruma directionality value ranging between 0 and 1, where values
+        closer to 1 indicate high directionality and values closer to 0 indicate 
+        low directionality.
+
+    Example:
+    --------
+    >>> image = np.array(io.imread('path_to_image.jpg'))
+    >>> directionality_value = compute_taruma_directionality(image, plot=True)
+
+    Notes:
+    ------
+    - The function uses convolutions to compute gradients, so performance 
+      may vary based on the image size.
+    - Ensure that the input image has an appropriate value range (e.g., between 0 and 255 
+      for 8-bit images).
+
+    """
+    image = np.array(image, dtype='int64')
+    image = np.mean(image, axis=-1) 
+
+    h = image.shape[0]
+    w = image.shape[1]
+
+    # Kernels de convolución
+    convH = np.array([[-1,0,1],[-1,0,1],[-1,0,1]])
+    convV = np.array([[1,1,1],[0,0,0],[-1,-1,-1]])  
+    
+    # Calcula componentes horizontales y verticales usando convolución
+    deltaH = convolve2d(image, convH, mode='same', boundary='symm')
+    deltaV = convolve2d(image, convV, mode='same', boundary='symm')
+
+    # Calcula la magnitud de gradiente
+    deltaG = (np.absolute(deltaH) + np.absolute(deltaV)) / 2.0
+
+    # Calcula el ángulo de dirección
+    theta = np.arctan2(deltaV, deltaH) + np.pi / 2.0
+
+    # Cuantización y histograma de dirección
+    n = 90
+    hist, edges = np.histogram(theta, bins=n, range=(0, np.pi), weights=deltaG)
+    
+    # Normalizar el histograma
+    hist = hist / np.max(hist)
+
+    # Calcular el umbral usando la media
+    threshold = np.mean(hist)
+
+    # Encuentra todos los picos que están por encima de la media
+    all_peaks, properties = find_peaks(hist, height=threshold)
+
+    # De esos picos, solo nos quedamos con los 5 más altos
+    if len(all_peaks) > 5:
+        sorted_peak_indices = np.argsort(properties['peak_heights'])[-5:]
+        peaks = all_peaks[sorted_peak_indices]
+        peak_properties = properties['peak_heights'][sorted_peak_indices]
+    else:
+        peaks = all_peaks
+        peak_properties = properties['peak_heights']
+
+    np_ = len(peaks)  # número de picos
+
+    # Calcula F_dir según la formulación dada
+    r = 1.0 / n  # factor de normalización
+    phi = np.linspace(0, np.pi, n, endpoint=False) + np.pi / (2 * n)
+    F_dir = 0
+    for p in peaks:
+        phi_p = phi[p]
+        F_dir +=  np.sum((phi - phi_p) ** 2 * hist)
+
+    if plot:
+        # Visualización
+        plt.bar(edges[:-1], hist, width=np.pi/n, align='center', alpha=0.75, label='Histograma')
+        plt.scatter(edges[peaks], peak_properties, color='red', marker='x', label='Picos mayores')
+        plt.xlabel('Ángulo (radianes)')
+        plt.ylabel('Frecuencia')
+        plt.title('Histograma de Direccionalidad')
+        plt.xlim(0, np.pi)
+        plt.xticks(np.arange(0, np.pi + 0.1, np.pi/4), ['0', 'π/4', 'π/2', '3π/4', 'π'])
+        plt.legend()
+        plt.show()
+
+    return 1 - (r * np_ * F_dir)
 
 
 

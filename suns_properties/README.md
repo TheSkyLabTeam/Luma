@@ -32,5 +32,27 @@ El directorio contiene los siguientes archivos clave:
 
 - **image_processing_pipeline.ipynb:** Este Jupyter Notebook es donde se ensamblan todas las funcionalidades. Aquí, se realiza el proceso completo desde la carga de las imágenes hasta la generación de las bases de datos con los parámetros calculados.
 
+- **script_ovatala.py:** Este script tiene la funcionalidad para calcular todos los parametros anteriormente descritos, pasando un rango de fechas, el tipo de imagen y la frecuencia. Para esto debe tener en cuenta la hora de inicio en la fecha es unica para cada tipo de imagen y la frecuencia, a continuacion se muestran:
+    **hmiigr**: 
+      - Hora incio: 00:00:00
+      - tipo de imagen: hmiigr
+      - frecuencia: 90T
+    **eit171**:
+      - Hora incio: 01:00:00
+      - tipo de imagen: eit171
+      - frecuencia: 12H
+    **eit195**:
+      - Hora incio: 01:13:00
+      - tipo de imagen: eit195
+      - frecuencia: 12H
+    **eit284**:
+      - Hora incio: 01:06:00
+      - tipo de imagen: eit284
+      - frecuencia: 12H
+    **eit304**:
+      - Hora incio: 01:19:00
+      - tipo de imagen: eit304
+      - frecuencia: 12H
 
-**Nota:** A medida que vayamos avanzando recuerden ir complementando este documento, en especial cuando se implemente el calculo de alguno de los parametros agregar la ecuación una breve descripción de que es lo que describe
+    
+**Nota:** En el jupyter *image_processing_pipeline* se puede ver como se pasan dichos parametros
