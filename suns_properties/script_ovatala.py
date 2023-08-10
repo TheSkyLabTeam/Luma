@@ -51,27 +51,34 @@ def compute_metrics(start_date, end_date, image_type,  frequency) -> pd.DataFram
         try:
             # Try to read the image
             image = io.imread(url)
+            
+
         except HTTPError:
             #print(f"Unable to access image at {url}")
             continue
 
-        # Compute the features
-        entropy = sia.compute_entropy(image)
-        mean_intensity = sia.compute_mean_intensity(image)
-        std_deviation = sia.compute_standard_deviation(image)
-        fractal_dimension = sia.compute_fractal_dimension(image)
-        skewness = sia.compute_skewness(image)
-        kurtosis = sia.compute_kurtosis(image)
-        uniformity = sia.compute_uniformity(image)
-        relative_smoothness = sia.compute_relative_smoothness(image)
-        taruma_contrast = sia.compute_taruma_contrast(image)
-        taruma_directionality = sia.compute_taruma_directionality(image)
-        # Extract the date from the URL
-        date_string = re.findall(r"\d{8}_\d{4}", url)[0]
-        date = datetime.strptime(date_string, '%Y%m%d_%H%M')
+        if len(image.shape) == 3:
+            
+            # Compute the features
+            entropy = sia.compute_entropy(image)
+            mean_intensity = sia.compute_mean_intensity(image)
+            std_deviation = sia.compute_standard_deviation(image)
+            fractal_dimension = sia.compute_fractal_dimension(image)
+            skewness = sia.compute_skewness(image)
+            kurtosis = sia.compute_kurtosis(image)
+            uniformity = sia.compute_uniformity(image)
+            relative_smoothness = sia.compute_relative_smoothness(image)
+            taruma_contrast = sia.compute_taruma_contrast(image)
+            taruma_directionality = sia.compute_taruma_directionality(image)
+            # Extract the date from the URL
+            date_string = re.findall(r"\d{8}_\d{4}", url)[0]
+            date = datetime.strptime(date_string, '%Y%m%d_%H%M')
 
-        # Append the results to the DataFrame
-        df.loc[date] = [entropy, mean_intensity, std_deviation, fractal_dimension, skewness, kurtosis, uniformity, relative_smoothness,taruma_contrast, taruma_directionality ]
+            # Append the results to the DataFrame
+            df.loc[date] = [entropy, mean_intensity, std_deviation, fractal_dimension, skewness, kurtosis, uniformity, relative_smoothness,taruma_contrast, taruma_directionality ]
+
+        else: 
+            pass
 
     return df
 

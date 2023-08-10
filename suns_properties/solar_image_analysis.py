@@ -355,7 +355,7 @@ def compute_taruma_directionality(image:np.ndarray, plot:bool = False)-> float:
 
     # Cuantización y histograma de dirección
     n = 90
-    hist, edges = np.histogram(theta, bins=n, range=(0, np.pi), weights=deltaG)
+    hist, edges = np.histogram(theta, bins=n, range=(0, np.pi), density=True)
     
     # Normalizar el histograma
     hist = hist / np.max(hist)
@@ -397,7 +397,7 @@ def compute_taruma_directionality(image:np.ndarray, plot:bool = False)-> float:
         plt.legend()
         plt.show()
 
-    return 1 - (r * np_ * F_dir)
+    return   1 - r *  np_ * F_dir
 
 
 
