@@ -7,7 +7,7 @@ import pandas as pd
 from urllib.error import HTTPError
 
 
-def compute_metrics(start_date, end_date, image_type,  frequency) -> pd.DataFrame:
+def compute_metrics(image_type:str, year:str = None, start:str = None, end:str = None,  frequency:str=  None ) -> pd.DataFrame:
     
     """
     Computes various image metrics for a set of images within a given date range and specified type and frequency.
@@ -42,8 +42,9 @@ def compute_metrics(start_date, end_date, image_type,  frequency) -> pd.DataFram
     for the resulting DataFrame.
     """
 
-    image_urls = get_image_urls(start_date, end_date, image_type, frequency)
-    # Create an empty DataFrame to store the results
+    image_urls = get_image_urls(image_type, year, start, end,  frequency )
+    
+    #Create an empty DataFrame to store the results
     df = pd.DataFrame(columns=['entropy', 'mean_intensity', 'std_deviation', 'fractal_dimension', 'skewness', 'kurtosis', 'uniformity', 'relative_smoothness', 
                                 'taruma_contrast', 'taruma_directionality'])
 
@@ -84,5 +85,9 @@ def compute_metrics(start_date, end_date, image_type,  frequency) -> pd.DataFram
 
 
 if __name__ == '__main__':
-    data = compute_metrics('01/01/2023 00:00:00', '01/01/2023 0:00:00','90T')
-    print(data)
+    # Este es el metodo que teniamos solo con una modificación en el orden de los parametros
+    #data = compute_metrics( image_type = 'hmiigr',start='01/01/2022 00:00:00', end= '01/01/2023', frequency='90T')
+    
+    # Esta es la otra opción, para años anteriores a 2011
+    data = compute_metrics( image_type = 'mdimag', year= '1997')
+    #print(data)
