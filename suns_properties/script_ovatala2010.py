@@ -5,7 +5,12 @@ import re
 from datetime import datetime
 import pandas as pd
 from urllib.error import HTTPError
+import sys
 
+image_type=sys.argv[1]
+start_date0=pd.to_datetime(sys.argv[2])
+
+output_name="output_"+sys.argv[1]+"_"+str("{:04d}".format(start_date0.year))+".csv"
 def compute_metrics(image_type:str, year:str = None, start:str = None, end:str = None,  frequency:str=  None ) -> pd.DataFrame:
     
     """
@@ -67,7 +72,7 @@ def compute_metrics(image_type:str, year:str = None, start:str = None, end:str =
         uniformity = sia.compute_uniformity(image)
         relative_smoothness = sia.compute_relative_smoothness(image)
         taruma_contrast = sia.compute_taruma_contrast(image)
-        taruma_directionality = 0 #sia.compute_taruma_directionality(image)
+        taruma_directionality = sia.compute_taruma_directionality(image)
         # Extract the date from the URL
         date_string = re.findall(r"\d{8}_\d{4}", url)[0]
         date = datetime.strptime(date_string, '%Y%m%d_%H%M')
@@ -78,12 +83,19 @@ def compute_metrics(image_type:str, year:str = None, start:str = None, end:str =
 
     return df
 
-
-
+import numpy as np
 if __name__ == '__main__':
-    # Este es el metodo que teniamos solo con una modificación en el orden de los parametros
-    #data = compute_metrics( image_type = 'hmiigr',start='01/01/2022 00:00:00', end= '01/01/2023', frequency='90T')
-    
-    # Esta es la otra opción, para años anteriores a 2011
-    data = compute_metrics( image_type = 'eit171', year= '1997')
+    #data = compute_metrics('01/01/2023 00:00:00', '01/01/2023 05:00:00','hmiigr', '90T')
+
+    data = compute_metrics( image_type =sys.argv[1] , year= sys.argv[2])
     print(data)
+    # data.to_csv("results/"+output_name,index=True)
+    # print("Save data type {} from year {}:".format(str(sys.argv[1]),str("{:04d}".format(start_date0.year))),output_name)
+    
+    
+    
+    
+    
+    
+    
+    

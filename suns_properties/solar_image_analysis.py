@@ -111,7 +111,8 @@ def compute_fractal_dimension(image: np.ndarray, threshold: float=0.5) -> float:
     fractal_dimension : float
         Calculated fractal dimension of the image.
     """
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    if len(image.shape) == 3:
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
     assert(len(image.shape) == 2)# "image must be 2D"
     
@@ -333,71 +334,75 @@ def compute_taruma_directionality(image:np.ndarray, plot:bool = False)-> float:
       for 8-bit images).
 
     """
-    image = np.array(image, dtype='int64')
-    image = np.mean(image, axis=-1) 
+    if len(image.shape) == 3:
+            
+        image = np.array(image, dtype='int64')
+        image = np.mean(image, axis=-1) 
 
-    h = image.shape[0]
-    w = image.shape[1]
+        h = image.shape[0]
+        w = image.shape[1]
 
-    # Kernels de convolución
-    convH = np.array([[-1,0,1],[-1,0,1],[-1,0,1]])
-    convV = np.array([[1,1,1],[0,0,0],[-1,-1,-1]])  
-    
-    # Calcula componentes horizontales y verticales usando convolución
-    deltaH = convolve2d(image, convH, mode='same', boundary='symm')
-    deltaV = convolve2d(image, convV, mode='same', boundary='symm')
+        # Kernels de convolución
+        convH = np.array([[-1,0,1],[-1,0,1],[-1,0,1]])
+        convV = np.array([[1,1,1],[0,0,0],[-1,-1,-1]])  
+        
+        # Calcula componentes horizontales y verticales usando convolución
+        deltaH = convolve2d(image, convH, mode='same', boundary='symm')
+        deltaV = convolve2d(image, convV, mode='same', boundary='symm')
 
-    # Calcula la magnitud de gradiente
-    deltaG = (np.absolute(deltaH) + np.absolute(deltaV)) / 2.0
+        # Calcula la magnitud de gradiente
+        deltaG = (np.absolute(deltaH) + np.absolute(deltaV)) / 2.0
 
-    # Calcula el ángulo de dirección
-    theta = np.arctan2(deltaV, deltaH) + np.pi / 2.0
+        # Calcula el ángulo de dirección
+        theta = np.arctan2(deltaV, deltaH) + np.pi / 2.0
 
-    # Cuantización y histograma de dirección
-    n = 90
-    hist, edges = np.histogram(theta, bins=n, range=(0, np.pi), density=True)
-    
-    # Normalizar el histograma
-    hist = hist / np.max(hist)
+        # Cuantización y histograma de dirección
+        n = 90
+        hist, edges = np.histogram(theta, bins=n, range=(0, np.pi), density=True)
+        
+        # Normalizar el histograma
+        hist = hist / np.max(hist)
 
-    # Calcular el umbral usando la media
-    threshold = np.mean(hist)
+        # Calcular el umbral usando la media
+        threshold = np.mean(hist)
 
-    # Encuentra todos los picos que están por encima de la media
-    all_peaks, properties = find_peaks(hist, height=threshold)
+        # Encuentra todos los picos que están por encima de la media
+        all_peaks, properties = find_peaks(hist, height=threshold)
 
-    # De esos picos, solo nos quedamos con los 5 más altos
-    if len(all_peaks) > 5:
-        sorted_peak_indices = np.argsort(properties['peak_heights'])[-5:]
-        peaks = all_peaks[sorted_peak_indices]
-        peak_properties = properties['peak_heights'][sorted_peak_indices]
+        # De esos picos, solo nos quedamos con los 5 más altos
+        if len(all_peaks) > 5:
+            sorted_peak_indices = np.argsort(properties['peak_heights'])[-5:]
+            peaks = all_peaks[sorted_peak_indices]
+            peak_properties = properties['peak_heights'][sorted_peak_indices]
+        else:
+            peaks = all_peaks
+            peak_properties = properties['peak_heights']
+
+        np_ = len(peaks)  # número de picos
+
+        # Calcula F_dir según la formulación dada
+        r = 1.0 / n  # factor de normalización
+        phi = np.linspace(0, np.pi, n, endpoint=False) + np.pi / (2 * n)
+        F_dir = 0
+        for p in peaks:
+            phi_p = phi[p]
+            F_dir +=  np.sum((phi - phi_p) ** 2 * hist)
+
+        if plot:
+            # Visualización
+            plt.bar(edges[:-1], hist, width=np.pi/n, align='center', alpha=0.75, label='Histograma')
+            plt.scatter(edges[peaks], peak_properties, color='red', marker='x', label='Picos mayores')
+            plt.xlabel('Ángulo (radianes)')
+            plt.ylabel('Frecuencia')
+            plt.title('Histograma de Direccionalidad')
+            plt.xlim(0, np.pi)
+            plt.xticks(np.arange(0, np.pi + 0.1, np.pi/4), ['0', 'π/4', 'π/2', '3π/4', 'π'])
+            plt.legend()
+            plt.show()
+
+        return   1 - r *  np_ * F_dir
     else:
-        peaks = all_peaks
-        peak_properties = properties['peak_heights']
-
-    np_ = len(peaks)  # número de picos
-
-    # Calcula F_dir según la formulación dada
-    r = 1.0 / n  # factor de normalización
-    phi = np.linspace(0, np.pi, n, endpoint=False) + np.pi / (2 * n)
-    F_dir = 0
-    for p in peaks:
-        phi_p = phi[p]
-        F_dir +=  np.sum((phi - phi_p) ** 2 * hist)
-
-    if plot:
-        # Visualización
-        plt.bar(edges[:-1], hist, width=np.pi/n, align='center', alpha=0.75, label='Histograma')
-        plt.scatter(edges[peaks], peak_properties, color='red', marker='x', label='Picos mayores')
-        plt.xlabel('Ángulo (radianes)')
-        plt.ylabel('Frecuencia')
-        plt.title('Histograma de Direccionalidad')
-        plt.xlim(0, np.pi)
-        plt.xticks(np.arange(0, np.pi + 0.1, np.pi/4), ['0', 'π/4', 'π/2', '3π/4', 'π'])
-        plt.legend()
-        plt.show()
-
-    return   1 - r *  np_ * F_dir
+        return np.nan
 
 
 

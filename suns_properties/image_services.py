@@ -88,8 +88,11 @@ def calculate_probabilities(image: np.ndarray) -> np.ndarray:
         Array of probabilities for each intensity level in the grayscale image.
     """
     # Convert the image to grayscale
-    
-    gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    if len(image.shape) == 3:
+        gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    else:
+        gray_image = image
+
 
     # Compute the histogram of the grayscale image
     histogram, _ = np.histogram(gray_image.ravel(), bins=256, range=[0,256])
