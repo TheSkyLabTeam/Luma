@@ -3,6 +3,9 @@ from scipy.signal import convolve2d, find_peaks
 import matplotlib.pyplot as plt
 import numpy as np
 import cv2
+import pywt
+from skimage.feature import graycomatrix, graycoprops
+
 
 
 def compute_entropy(image: np.ndarray) -> float:
@@ -111,8 +114,7 @@ def compute_fractal_dimension(image: np.ndarray, threshold: float=0.5) -> float:
     fractal_dimension : float
         Calculated fractal dimension of the image.
     """
-    if len(image.shape) == 3:
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
     assert(len(image.shape) == 2)# "image must be 2D"
     
@@ -334,77 +336,213 @@ def compute_taruma_directionality(image:np.ndarray, plot:bool = False)-> float:
       for 8-bit images).
 
     """
-    if len(image.shape) == 3:
-            
-        image = np.array(image, dtype='int64')
-        image = np.mean(image, axis=-1) 
+    image = np.array(image, dtype='int64')
+    image = np.mean(image, axis=-1) 
 
-        h = image.shape[0]
-        w = image.shape[1]
+    h = image.shape[0]
+    w = image.shape[1]
 
-        # Kernels de convolución
-        convH = np.array([[-1,0,1],[-1,0,1],[-1,0,1]])
-        convV = np.array([[1,1,1],[0,0,0],[-1,-1,-1]])  
-        
-        # Calcula componentes horizontales y verticales usando convolución
-        deltaH = convolve2d(image, convH, mode='same', boundary='symm')
-        deltaV = convolve2d(image, convV, mode='same', boundary='symm')
+    # Kernels de convolución
+    convH = np.array([[-1,0,1],[-1,0,1],[-1,0,1]])
+    convV = np.array([[1,1,1],[0,0,0],[-1,-1,-1]])    
+    
+    # Calcula componentes horizontales y verticales usando convolución
+    deltaH = convolve2d(image, convH, mode='same', boundary='symm')
+    deltaV = convolve2d(image, convV, mode='same', boundary='symm')
 
-        # Calcula la magnitud de gradiente
-        deltaG = (np.absolute(deltaH) + np.absolute(deltaV)) / 2.0
+    # Calcula la magnitud de gradiente
+    deltaG = (np.absolute(deltaH) + np.absolute(deltaV)) / 2.0
 
-        # Calcula el ángulo de dirección
-        theta = np.arctan2(deltaV, deltaH) + np.pi / 2.0
+    # Calcula el ángulo de dirección
+    theta = np.arctan2(deltaV, deltaH) + np.pi / 2.0
 
-        # Cuantización y histograma de dirección
-        n = 90
-        hist, edges = np.histogram(theta, bins=n, range=(0, np.pi), density=True)
-        
-        # Normalizar el histograma
-        hist = hist / np.max(hist)
+    # Cuantización y histograma de dirección
+    n = 90
+    hist, edges = np.histogram(theta, bins=n, range=(0, np.pi), density=True)
+    
+    # Normalizar el histograma
+    hist = hist / np.max(hist)
 
-        # Calcular el umbral usando la media
-        threshold = np.mean(hist)
+    # Calcular el umbral usando la media
+    threshold = np.mean(hist)
 
-        # Encuentra todos los picos que están por encima de la media
-        all_peaks, properties = find_peaks(hist, height=threshold)
+    # Encuentra todos los picos que están por encima de la media
+    all_peaks, properties = find_peaks(hist, height=threshold)
 
-        # De esos picos, solo nos quedamos con los 5 más altos
-        if len(all_peaks) > 5:
-            sorted_peak_indices = np.argsort(properties['peak_heights'])[-5:]
-            peaks = all_peaks[sorted_peak_indices]
-            peak_properties = properties['peak_heights'][sorted_peak_indices]
-        else:
-            peaks = all_peaks
-            peak_properties = properties['peak_heights']
-
-        np_ = len(peaks)  # número de picos
-
-        # Calcula F_dir según la formulación dada
-        r = 1.0 / n  # factor de normalización
-        phi = np.linspace(0, np.pi, n, endpoint=False) + np.pi / (2 * n)
-        F_dir = 0
-        for p in peaks:
-            phi_p = phi[p]
-            F_dir +=  np.sum((phi - phi_p) ** 2 * hist)
-
-        if plot:
-            # Visualización
-            plt.bar(edges[:-1], hist, width=np.pi/n, align='center', alpha=0.75, label='Histograma')
-            plt.scatter(edges[peaks], peak_properties, color='red', marker='x', label='Picos mayores')
-            plt.xlabel('Ángulo (radianes)')
-            plt.ylabel('Frecuencia')
-            plt.title('Histograma de Direccionalidad')
-            plt.xlim(0, np.pi)
-            plt.xticks(np.arange(0, np.pi + 0.1, np.pi/4), ['0', 'π/4', 'π/2', '3π/4', 'π'])
-            plt.legend()
-            plt.show()
-
-        return   1 - r *  np_ * F_dir
+    # De esos picos, solo nos quedamos con los 5 más altos
+    if len(all_peaks) > 5:
+        sorted_peak_indices = np.argsort(properties['peak_heights'])[-5:]
+        peaks = all_peaks[sorted_peak_indices]
+        peak_properties = properties['peak_heights'][sorted_peak_indices]
     else:
-        return np.nan
+        peaks = all_peaks
+        peak_properties = properties['peak_heights']
+
+    np_ = len(peaks)  # número de picos
+
+    # Calcula F_dir según la formulación dada
+    r = 1.0 / n  # factor de normalización
+    phi = np.linspace(0, np.pi, n, endpoint=False) + np.pi / (2 * n)
+    F_dir = 0
+    for p in peaks:
+        phi_p = phi[p]
+        F_dir +=  np.sum((phi - phi_p) ** 2 * hist)
+
+    if plot:
+        # Visualización
+        plt.bar(edges[:-1], hist, width=np.pi/n, align='center', alpha=0.75, label='Histograma')
+        plt.scatter(edges[peaks], peak_properties, color='red', marker='x', label='Picos mayores')
+        plt.xlabel('Ángulo (radianes)')
+        plt.ylabel('Frecuencia')
+        plt.title('Histograma de Direccionalidad')
+        plt.xlim(0, np.pi)
+        plt.xticks(np.arange(0, np.pi + 0.1, np.pi/4), ['0', 'π/4', 'π/2', '3π/4', 'π'])
+        plt.legend()
+        plt.show()
+
+    return   1 - r *  np_ * F_dir
 
 
+def compute_taruma_coarseness(image: np.ndarray) -> float:
+    """
+    Compute the Taruma coarseness of an image.
+    
+    Coarseness is a metric that captures the roughness or coarse texture in an image.
+    Although it is not directly related to the Taruma direction, you can use similar
+    techniques to calculate it. Below, I provide you with an example of how to
+    calculate the coarseness metric using the Wavelet Transform in Python with the
+    PyWavelets library.
 
+    Parameters
+    ----------
+    image : np.ndarray
+        Input image data. Will be converted to float.
 
+    Returns
+    -------
+    taruma_contrast : float
+        Calculated Taruma coarseness.
+        
+    """
+    wavelet_level=1
+    # Calcular la transformada de wavelet
+    coeffs = pywt.wavedec2(image, 'haar', level=wavelet_level)
+    
+    # Calcular el coarseness basado en los coeficientes de la transformada de wavelet
+    taruma_coarseness = np.sum(np.abs(coeffs[wavelet_level])) / (image.shape[0] * image.shape[1])
+    
+    return taruma_coarseness
+    
+    
+def compute_taruma_linelikeness(image: np.ndarray) -> float:
+    """
+    Compute the Taruma linelikeness of an image.
+    
+    Linelikeness is a metric that seeks to quantify the presence and predominance of
+    lines in an image. Although it is not a standard metric related to Taruma 
+    direction, you can adapt the approach to calculate it using edge detection and 
+    directionality techniques. Below, I provide you with an example of how to calculate 
+    a linelikeness metric in Python using edge detection and predominant direction 
+    calculation.
+
+    Parameters
+    ----------
+    image : np.ndarray
+        Input image data. Will be converted to float.
+
+    Returns
+    -------
+    taruma_contrast : float
+        Calculated Taruma linelikeness.
+        
+    """
+    sobel_kernel=3
+    # Calcular gradientes horizontales y verticales con el operador de Sobel
+    gradient_x = cv2.Sobel(image, cv2.CV_64F, 1, 0, ksize=sobel_kernel)
+    gradient_y = cv2.Sobel(image, cv2.CV_64F, 0, 1, ksize=sobel_kernel)
+    
+    # Calcular la magnitud y la dirección de los gradientes
+    gradient_magnitude = np.sqrt(gradient_x**2 + gradient_y**2)
+    gradient_direction = np.arctan2(gradient_y, gradient_x)
+    
+    # Calcular una métrica de linelikeness basada en la dirección de los gradientes
+    taruma_linelikeness = np.sum(np.abs(np.sin(2 * gradient_direction))) / (image.shape[0] * image.shape[1])
+    
+    return taruma_linelikeness
+    
+    
+def compute_taruma_regularities(image: np.ndarray) -> float:
+    """
+    Compute the Taruma regularities of an image.
+    
+    Regularity" in an image refers to the uniformity and repeatability of patterns 
+    present in the image. There is no standard formula for "regularity" as in the case 
+    of Taruma's direction. However, you can adapt texture analysis techniques to 
+    quantify regularity in an image. Here is an example that uses the cooccurrence 
+    matrix to calculate a measure of regularity.
+
+    Parameters
+    ----------
+    image : np.ndarray
+        Input image data. Will be converted to float.
+
+    Returns
+    -------
+    taruma_contrast : float
+        Calculated Taruma regularities.
+        
+    """
+    distance=1
+    angles=[0]
+    levels=256
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    # Calcular la matriz de coocurrencia
+    cooccurrence_matrix = graycomatrix(image, [distance], angles, symmetric=True, normed=True, levels=levels)
+    
+    # Calcular medidas de regularidad
+    contrast = graycoprops(cooccurrence_matrix, prop='contrast')
+    correlation = graycoprops(cooccurrence_matrix, prop='correlation')
+    
+    # Calcular una métrica de regularity basada en las medidas de coocurrencia
+    taruma_regularity = (contrast + (1 - correlation)) / 2
+    
+    return taruma_regularity[0][0]
+    
+def compute_taruma_roughness(image: np.ndarray) -> float:
+    """
+    Compute the Taruma roughness of an image.
+    
+    Roughness refers to the texture or irregular patterns present in an image. There is 
+    no specific roughness metric in the context of Taruma, but you can adapt texture 
+    analysis techniques to quantify roughness in an image. Below, I provide an example 
+    that uses the co-occurrence matrix to calculate a roughness measure.
+
+    Parameters
+    ----------
+    image : np.ndarray
+        Input image data. Will be converted to float.
+
+    Returns
+    -------
+    taruma_contrast : float
+        Calculated Taruma roughness.
+        
+    """
+    distance=1
+    angles=[0]
+    levels=256
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    # Calcular la matriz de coocurrencia
+    cooccurrence_matrix = graycomatrix(image, [distance], angles, symmetric=True, normed=True, levels=levels)
+    
+    # Calcular medidas de textura
+    energy = graycoprops(cooccurrence_matrix, prop='energy')
+    homogeneity = graycoprops(cooccurrence_matrix, prop='homogeneity')
+    
+    # Calcular una métrica de roughness basada en las medidas de coocurrencia
+    taruma_roughness = (1 - energy) * homogeneity
+    
+    return taruma_roughness[0][0]
+    
+    
 

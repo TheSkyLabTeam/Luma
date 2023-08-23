@@ -49,18 +49,22 @@ def compute_metrics(image_type:str, year:str = None, start:str = None, end:str =
     image_urls = get_image_urls(image_type, year, start, end,  frequency )
     
     #Create an empty DataFrame to store the results
-    df = pd.DataFrame(columns=['entropy', 'mean_intensity', 'std_deviation', 'fractal_dimension', 'skewness', 'kurtosis', 'uniformity', 'relative_smoothness', 
-                                'taruma_contrast', 'taruma_directionality'])
+    df = pd.DataFrame(columns=['entropy', 'mean_intensity', 'std_deviation',
+    'fractal_dimension', 'skewness', 'kurtosis', 'uniformity', 'relative_smoothness', 
+    'taruma_contrast', 'taruma_directionality', 'taruma_coarseness',
+    'taruma_linelikeness', 'taruma_roughness', 'taruma_regularity'])
 
-    for url in image_urls[:30]:
+    for url in image_urls[:10]:
         try:
             # Try to read the image
             image = io.imread(url)
-            
 
         except HTTPError:
             #print(f"Unable to access image at {url}")
             continue
+
+        except:
+            pass
             
         # Compute the features
         entropy = sia.compute_entropy(image)
@@ -73,12 +77,17 @@ def compute_metrics(image_type:str, year:str = None, start:str = None, end:str =
         relative_smoothness = sia.compute_relative_smoothness(image)
         taruma_contrast = sia.compute_taruma_contrast(image)
         taruma_directionality = sia.compute_taruma_directionality(image)
+        taruma_coarseness = sia.compute_taruma_coarseness(image)
+        taruma_linelikeness = sia.compute_taruma_linelikeness(image)
+        taruma_regularity = sia.compute_taruma_regularities(image)
+        taruma_roughness = sia.compute_taruma_roughness(image)
+
         # Extract the date from the URL
         date_string = re.findall(r"\d{8}_\d{4}", url)[0]
         date = datetime.strptime(date_string, '%Y%m%d_%H%M')
 
         # Append the results to the DataFrame
-        df.loc[date] = [entropy, mean_intensity, std_deviation, fractal_dimension, skewness, kurtosis, uniformity, relative_smoothness,taruma_contrast, taruma_directionality ]
+        df.loc[date] = [entropy, mean_intensity, std_deviation, fractal_dimension, skewness, kurtosis, uniformity, relative_smoothness,taruma_contrast, taruma_directionality, taruma_coarseness, taruma_linelikeness, taruma_roughness, taruma_regularity]
 
 
     return df
@@ -88,14 +97,7 @@ if __name__ == '__main__':
     #data = compute_metrics('01/01/2023 00:00:00', '01/01/2023 05:00:00','hmiigr', '90T')
 
     data = compute_metrics( image_type =sys.argv[1] , year= sys.argv[2])
-    print(data)
-    # data.to_csv("results/"+output_name,index=True)
-    # print("Save data type {} from year {}:".format(str(sys.argv[1]),str("{:04d}".format(start_date0.year))),output_name)
-    
-    
-    
-    
-    
-    
-    
+    #print(data)
+    data.to_csv(output_name,index=True)
+    print("Save data type {} from year {}:".format(str(sys.argv[1]),str("{:04d}".format(start_date0.year))),output_name)
     

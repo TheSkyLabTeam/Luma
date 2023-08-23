@@ -3,6 +3,8 @@ import pandas as pd
 from bs4 import BeautifulSoup
 import requests
 
+
+
 def get_image_urls(image_type: str, year:str = None, start:str = None, end:str = None,  frequency:str=  None ) -> List[str]:
     """
     This function generates the URLs to download solar images from the SOHO NASCOM website for a given date range.
@@ -88,11 +90,10 @@ def calculate_probabilities(image: np.ndarray) -> np.ndarray:
         Array of probabilities for each intensity level in the grayscale image.
     """
     # Convert the image to grayscale
-    if len(image.shape) == 3:
+    try:    
         gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    else:
-        gray_image = image
-
+    except:
+        pass
 
     # Compute the histogram of the grayscale image
     histogram, _ = np.histogram(gray_image.ravel(), bins=256, range=[0,256])
