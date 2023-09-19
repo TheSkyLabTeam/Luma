@@ -2,26 +2,37 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
+@font-face {
+  font-family: 'monasans';
+  src: url('./Fonts/MonaSansExpanded-Regular.ttf');
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
-  }
+* {
+  font-family: 'monasans'
 }
 
 body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+  @apply overflow-hidden
+}
+
+.rdp [aria-hidden="true"] {
+    @apply hidden;
+  }
+  
+.rdp-vhidden {
+@apply hidden;
+}
+  
+select::-webkit-scrollbar {
+display: none;
+}
+
+.rpd-caption_dropdowns {
+    @apply w-96 flex flex-row bg-slate-300;
+}
+
+/* For animations*/
+
+.lineMask {
+  @apply overflow-hidden
 }
