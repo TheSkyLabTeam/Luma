@@ -31,6 +31,12 @@ display: none;
     @apply w-96 flex flex-row bg-slate-300;
 }
 
+/* App header */
+#appHeader {
+  background-image: url('./images/magicpattern-mesh-gradient-1695096909883.png');
+  background-size: cover;
+}
+
 /* For animations*/
 
 .lineMask {
